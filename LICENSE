@@ -22,4 +22,13 @@ SOFTWARE.
 
 ---
 
-> **Disclaimer:** Pharos is an independent, open-source personal research project built entirely using public libraries. It is not affiliated with, endorsed by, or representative of any commercial entity or employer.
+### 💡 Personal Project Notice
+
+Pharos is an independent, open-source personal research project built entirely 
+in my own time using public libraries. 
+
+The code, architectural design, and synthetic datasets contained in this repository 
+are created solely in an individual capacity for learning and brand-building purposes. 
+They do not reflect the views, strategies, or technologies of any current or past 
+employers, nor was any corporate time, hardware, or intellectual property used in 
+the making of this project.
