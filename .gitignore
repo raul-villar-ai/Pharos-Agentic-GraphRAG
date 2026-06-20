@@ -1,0 +1,29 @@
+# =====================================================================
+# PHAROS AGENTIC GRAPHRAG - REPOSITORY SAFEGUARDS
+# =====================================================================
+
+# 1. Python Bytecode & Compilation Artifacts
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# 2. Local Environment Secrets & Security Profiles
+.env
+.env.sandbox
+usr_credentials.json
+
+# 3. Local Python Virtual Environments
+venv/
+env/
+ENV/
+
+# 4. Pharos Runtime State Logs, UI Cache, & Generated Maps
+triage_history.json
+pyvis_graph.html
+.streamlit/
+
+# 5. OS-Specific Clutter
+.DS_Store
+Thumbs.db
