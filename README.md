@@ -2,7 +2,8 @@
 
 ## Reference Architecture & Technical Proof of Concept
 
-**An Automated, Resilient Supply Chain Cyber Triage & Control Center**
+**A Hybrid Cognitive-Deterministic Security Engine**
+**Automated Cyber Triage & Topological Impact Analysis for Enterprise Supply Chains**
 
 ---
 
@@ -16,11 +17,15 @@ Pharos is a functional reference architecture and system prototype designed to a
 
 ## Architectural Foundations & Core Pillars
 
-The reference architecture is governed by four core operational pillars designed for deployment in stable enterprise environments:
+The reference architecture is governed by five core operational pillars designed for deployment in stable enterprise environments:
 
-### 1. Active Guardrails & Token Sanitation
+### 1. Multi-Layered Security Guardrails
 
-Before raw incident description data reaches the core intelligence layers, it passes through an inline sanitation filter inside `coordinator.py`. This layer scans for, intercepts, and blocks adversarial prompt injections, system override attempts, and malicious token payloads. If an injection is flagged, the pipeline short-circuits to an isolated triage state, protecting downstream LLM nodes from manipulation.
+Incident data traverses a context-aware, three-stage defensive pipeline before reaching the cognitive tier:
+
+* **Hardened Signature Filter:** Performs rapid alphanumeric normalization to neutralize obfuscation (e.g., `o_v_e_r_r_i_d_e`), while using context-length checks to ensure legitimate technical logs aren't falsely blocked.
+* **Fuzzy Intent Analysis:** Utilizes similarity scoring (`rapidfuzz`) to detect adversarial intent even when keywords are slightly altered or reordered.
+* **Few-Shot Negative Injection Defense:** System prompts are fortified with negative examples, teaching the LLM to recognize and reject jailbreak patterns natively.
 
 ### 2. Strict Human-in-the-Loop (HITL) Controls
 
@@ -34,23 +39,27 @@ System transparency is maintained through dual-layered logging structures. The s
 
 The system includes a native evaluation pipeline that treats prompts as software assets. By compiling model extraction accuracy against a standardized 100-case baseline dataset, this engine serves as a data-driven testing rig. It exposes exactly where the model fails (such as semantic negations or structured log parsing), allowing engineers to measure score drift, catch functional regressions, and optimize agent prompts through disciplined engineering loops.
 
+### 5. Strict Schema Grounding (Hallucination Defense)
+
+To prevent the LLM from hallucinating targets, every extraction result is cross-referenced against the `VALID_NODES_LIST` (the topology matrix). If the LLM returns an entity not explicitly defined in the graph schema, the pipeline automatically forces an `UNKNOWN` state, ensuring only validated structural nodes enter the downstream risk assessment engine.
+
 ---
 
 ## 🧬 System Architecture & Execution Philosophy
 
-Pharos is designed around a strict architectural boundary that separates cognitive reasoning from deterministic execution. Unlike naive agentic frameworks that chain multiple LLMs together—which introduces high latency, runaway token costs, and a compounding probability of hallucinations—Pharos utilizes a disciplined, **hybrid multi-agent design**:
+Pharos is designed around a strict architectural boundary that separates cognitive reasoning from deterministic execution. Unlike naive agentic frameworks that chain multiple LLMs together—which introduces high latency, runaway token costs, and a compounding probability of hallucinations—Pharos utilizes a disciplined, hybrid multi-agent design:
 
-1. **Cognitive Tier (The Analyst Agent):** A singular LLM instance (`gpt-4o-mini`) used exclusively for what language models do best: parsing messy, unstructured, and novel alert log text to resolve semantic entities.
-2. **Deterministic Tier (The Risk Agent):** A completely algorithmic execution engine. Once the target node is resolved, downstream blast-radius analysis is immediately offloaded to a local graph database engine (`NetworkX`) using mathematical ancestry tracking.
+* **Cognitive Tier (The Analyst Agent):** A singular LLM instance (`gpt-4o-mini`) used exclusively for what language models do best: parsing messy, unstructured, and novel alert log text to resolve semantic entities.
+* **Deterministic Tier (The Risk Agent):** A completely algorithmic execution engine. Once the target node is resolved, downstream blast-radius analysis is immediately offloaded to a local graph database engine (`NetworkX`) using mathematical ancestry tracking.
 
-By confining fluid LLM reasoning strictly to the intake layer and using exact graph algorithms for impact analysis, Pharos guarantees $100\%$ predictable, repeatable, and cost-effective triage execution at enterprise scale.
+By confining fluid LLM reasoning strictly to the intake layer and using exact graph algorithms for impact analysis, Pharos guarantees 100% predictable, repeatable, and cost-effective triage execution at enterprise scale.
 
 ### 🛡️ Core Operational Guardrails & Fallbacks
 
 To ensure production readiness, the architecture enforces three non-negotiable operational boundaries:
 
-* **Pre-Filter Input Guardrails:** A string-normalization token scanner inside `coordinator.py` intercepts payloads and forces an immediate circuit-breaker fallback to `UNKNOWN` if adversarial override phrases are detected.
-* **Graceful Degradation Fallback:** If the external OpenAI API experiences a timeout or global outage, the system catches the exception and engages a local **Heuristic Signature Network** to extract critical infrastructure entities via regex matching, preventing system blackout.
+* **Pre-Filter Input Guardrails:** A context-aware normalization and fuzzy-matching token scanner inside `analyst.py` intercepts payloads. It forces an immediate circuit-breaker fallback to `UNKNOWN` if adversarial override phrases or intents are detected, while safely passing legitimate technical logs.
+* **Graceful Degradation Fallback:** If the external OpenAI API experiences a timeout or global outage, the system catches the exception and engages a local Heuristic Signature Network to extract critical infrastructure entities via regex matching, preventing system blackout.
 * **Human-in-the-Loop (HITL) Intercept:** Pharos operates strictly as an advisory engine. A hard gate freezes the loop prior to containment deployment, requiring an operator to manually review and authorize the generated cryptographic shell script via the Streamlit console.
 
 ---
@@ -59,7 +68,7 @@ To ensure production readiness, the architecture enforces three non-negotiable o
 
 The runtime execution flow maps the path from unstructured intake down to the automated script compilation block:
 
-```
+```text
 [Incoming Raw Alert String] ──► [Input Guardrails & Token Sanitation Filter]
                                               │
                         ┌─────────────────────┴─────────────────────┐
@@ -69,6 +78,9 @@ The runtime execution flow maps the path from unstructured intake down to the au
                         │                                           │
                         └─────────────────────┬─────────────────────┘
                                               ▼
+                               [Strict Schema Grounding Check]
+                                      (Matrix Validation)
+                                              │
                                [Structural Entity Resolution]
                                               │
                            [NetworkX Graph Topology Traversal]
@@ -93,7 +105,7 @@ The responsive web console maps directly to these architectural objectives acros
 * **Incident Intake & Guardrail Protection:** Hosts the active simulation environment where raw text alerts are processed, validated against injection strings, and normalized.
 * **Heuristic Safety Net:** If the live cloud network encounters key constraints or timeouts, a local string-matching fallback matrix scans for explicit infrastructure tokens (such as `EU_EAST` or `AUTH_MODULE`). This hybrid design maintains triage availability under varying network conditions.
 * **Dynamic PyVis Visual Mapping Canvas:** Renders calculated graph paths onto an interactive light-slate canvas. Nodes are scaled and color-coded based on active risk definitions (Target, Affected, or Mitigated), using high-contrast text-stroke shadows for scannability on enterprise dashboard displays.
-* **HITL Approval Gate Component:** Renders the generated shell-script containment playbook side-by-side with interactive action triggers (`Approve & Execute` / `Reject & Quarantine`), pausing the backend workflow until manual clearance is granted.
+* **HITL Approval Gate Component:** Renders the generated shell-script containment playbook side-by-side with interactive action triggers (Approve & Execute / Reject & Quarantine), pausing the backend workflow until manual clearance is granted.
 
 ### Tab 2: Agent Execution Trace
 
@@ -125,7 +137,7 @@ To construct the baseline reference infrastructure topology, Pharos normalizes d
 
 The underlying NetworkX database engine maps flat data blocks into directed entities (nodes) and relational operations (edges):
 
-```
+```text
 [User Group Entity] ───( ADMINISTERS )───► [Server / Host Entity]
                                                     │
                                              ( HOSTS / RUNS )
@@ -140,23 +152,22 @@ The underlying NetworkX database engine maps flat data blocks into directed enti
 
 ```
 
-* **Node Definitions:**
-* `Server / Host`: Computing hardware footprints, virtual cluster nodes, or cloud instances (`DC_EU_EAST`, `DC_UK_SOUTH`).
-* `Application`: Active software deployments and backend microservices (`GOV_PORTAL_CORE`, `AUTH_MODULE_v2`).
-* `Database`: Relational or non-relational core data clusters.
-* `Vulnerability`: Active security exposures or software bugs (`OPEN_SOURCE_LOGGING_LIB`).
-* `User Group`: IAM identity footprints and permission levels (`PRIME_ALPHA`, `SUB_BETA`).
-* `Sensitive Data`: High-value data stores requiring zero-trust masking boundaries (PII, compliance logs).
+**Node Definitions:**
 
+* **Server / Host:** Computing hardware footprints, virtual cluster nodes, or cloud instances (`DC_EU_EAST`, `DC_UK_SOUTH`).
+* **Application:** Active software deployments and backend microservices (`GOV_PORTAL_CORE`, `AUTH_MODULE_v2`).
+* **Database:** Relational or non-relational core data clusters.
+* **Vulnerability:** Active security exposures or software bugs (`OPEN_SOURCE_LOGGING_LIB`).
+* **User Group:** IAM identity footprints and permission levels (`PRIME_ALPHA`, `SUB_BETA`).
+* **Sensitive Data:** High-value data stores requiring zero-trust masking boundaries (PII, compliance logs).
 
-* **Edge Operations:**
+**Edge Operations:**
+
 * `Server` ── `HOSTS` ──► `Application`
 * `Application` ── `COMMUNICATES_WITH` ──► `Database`
 * `Database` ── `CONTAINS` ──► `Sensitive Data`
 * `User Group` ── `ADMINISTERS` ──► `Server`
 * `Application` ── `EXPOSES` ──► `Vulnerability`
-
-
 
 ---
 
@@ -169,6 +180,7 @@ The implementation is constructed entirely using open-source, decoupled architec
 | **Orchestration Layer** | Python / LangGraph | Manages system execution loops, dynamic state machines, and multi-agent cross-communication frames. |
 | **Topology Graph Database** | NetworkX | Models network nodes and paths mathematically to run deterministic ancestry tracking algorithms. |
 | **Intelligence Engine** | OpenAI API (`gpt-4o-mini`) | Delivers unstructured text contextual reasoning, language parsing, and semantic extraction features. |
+| **Security Guardrail Engine** | RapidFuzz | Enables high-performance fuzzy similarity matching to catch obfuscated adversarial input. |
 | **Environment Security** | `python-dotenv` | Provides configuration isolation by loading API parameters from secure local files, keeping keys out of repository paths. |
 | **User Interface Console** | Streamlit | Drives the enterprise responsive web layout dashboard, live simulator selectors, and action control triggers. |
 | **Visual Mapping Canvas** | PyVis (HTML5 / JS) | Renders physics-powered graph visualizations, applying real-time updates to node states. |
@@ -187,7 +199,7 @@ A defining feature of the Pharos architecture is its dedicated, native validatio
 The testing suite runs your code against a matrix of 100 diverse, enterprise-level cybersecurity test cases. These cases are categorized into five distinct evaluation profiles designed to test the limits of model reasoning:
 
 * **Standard Extraction:** Verifies basic entity recognition accuracy against standard alert text formats.
-* **Semantic Negation:** Evaluates whether the model can accurately distinguish real active threats from distracting phrases or false alarms (for example: *"Ignore the warning on database cluster alpha as it has completely recovered; the active compromise is located on portal core"*).
+* **Semantic Negation:** Evaluates whether the model can accurately distinguish real active threats from distracting phrases or false alarms (for example: "Ignore the warning on database cluster alpha as it has completely recovered; the active compromise is located on portal core").
 * **Structured Log Parsing:** Tests the system's ability to natively process and map raw nested JSON strings and string arrays without syntax errors.
 * **Adversarial Prompt Injections:** Evaluates input guardrail defense strength by running malicious system override strings against the pipeline.
 * **Ambiguous / Unmapped Targets:** Verifies that the model correctly outputs a generic fallback state (`UNKNOWN`) when logs contain completely unmapped or irrelevant infrastructure targets.
@@ -196,7 +208,7 @@ The testing suite runs your code against a matrix of 100 diverse, enterprise-lev
 
 Every live audit run computes explicit metrics across your dataset to establish an overall performance profile. The baseline score calculation is handled programmatically:
 
-$$\text{Overall Model Accuracy} = \frac{\text{Passed Benchmark Verdicts}}{\text{Total Golden Dataset Test Cases}} \times 100$$
+$$\text{Overall Model Accuracy} = \left( \frac{\text{Passed Benchmark Verdicts}}{\text{Total Golden Dataset Test Cases}} \right) \times 100$$
 
 To display these tracking trends cleanly without data compression or axis truncation, Pharos uses an Altair data engine. This dashboard component ensures:
 
@@ -218,11 +230,6 @@ The user interface is built as an accessible Light-Mode Enterprise Glass Console
 
 ### 💡 Personal Project Notice
 
-Pharos is an independent, open-source personal research project built entirely 
-in my own time using public libraries. 
+Pharos is an independent, open-source personal research project built entirely in my own time using public libraries.
 
-The code, architectural design, and synthetic datasets contained in this repository 
-are created solely in an individual capacity for learning and brand-building purposes. 
-They do not reflect the views, strategies, or technologies of any current or past 
-employers, nor was any corporate time, hardware, or intellectual property used in 
-the making of this project.
+The code, architectural design, and synthetic datasets contained in this repository are created solely in an individual capacity for learning and brand-building purposes. They do not reflect the views, strategies, or technologies of any current or past employers, nor was any corporate time, hardware, or intellectual property used in the making of this project.

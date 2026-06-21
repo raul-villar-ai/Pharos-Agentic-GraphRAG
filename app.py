@@ -15,6 +15,7 @@ load_dotenv()
 from src.config import HISTORY_FILE, EVAL_LOGS_PATH
 from src.agents import pharos_intelligent_engine
 from src.evaluation import PharosLLMOpsEvaluator
+from src.topology.graph_builder import PharosTopologyBuilder
 
 def load_triage_history():
     if os.path.exists(HISTORY_FILE):
@@ -181,14 +182,29 @@ st.markdown("""
             letter-spacing: 1.5px !important;
             text-transform: uppercase !important;
         }
+        .enterprise-repo-link {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+            font-size: 16px !important;
+            font-weight: 600 !important;
+            margin-top: 8px !important;
+            display: block !important;
+        }
+        .enterprise-repo-link a {
+            color: #2563eb !important;
+            text-decoration: none !important;
+        }
+        .enterprise-repo-link a:hover {
+            text-decoration: underline !important;
+            color: #1d4ed8 !important;
+        }
         
         /* 🎯 ENLARGED RUNTIME ENGINE TELEMETRY BADGE STYLING */
         .runtime-engine-badge {
             font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
-            font-size: 24px !important;               /* Boosted to match command title sizing */
-            font-weight: 900 !important;               /* Extra-bold structure visibility */
+            font-size: 24px !important;              /* Boosted to match command title sizing */
+            font-weight: 900 !important;              /* Extra-bold structure visibility */
             letter-spacing: 0.5px !important;
-            padding: 16px 28px !important;             /* Expanded padded breathing room */
+            padding: 16px 28px !important;            /* Expanded padded breathing room */
             border-radius: 8px !important;
             white-space: nowrap !important;
             box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important; /* Enhanced layer definition */
@@ -196,12 +212,13 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Render Balanced Dashboard Banner with Smart Flexbox Injection Status Badge
+# Render Balanced Dashboard Banner with Smart Flexbox Injection Status Badge and Repository Target
 st.markdown(f"""
     <div class="enterprise-header-container">
         <div>
             <div class="enterprise-title">PHAROS <span>AGENTIC GraphRAG</span></div>
             <div class="enterprise-subtitle">⚡ Enterprise Supply Chain Cyber Triage & Control Center</div>
+            <div class="enterprise-repo-link">📦 Codebase: <a href="https://github.com/raul-villar-ai/Pharos-Agentic-GraphRAG" target="_blank">github.com/raul-villar-ai/Pharos-Agentic-GraphRAG</a></div>
         </div>
         <div class="runtime-engine-badge" style="background-color: {badge_bg}; color: {badge_color}; border: 1px solid {badge_border};">
             {badge_text}
@@ -368,24 +385,17 @@ with tab1:
                 net = Network(height="380px", width="100%", bgcolor="#f8fafc", font_color="#0f172a")
                 net.barnes_hut(gravity=-1800, central_gravity=0.12, spring_length=140, spring_strength=0.03, damping=0.85)
                 
-                network_nodes = {
-                    "OPEN_SOURCE_LOGGING_LIB": ["AUTH_MODULE_v2", "API_GATEWAY_EDGE", "CORE_DB_CLUSTER", "DC_EU_EAST"],
-                    "GOV_PORTAL_CORE": ["API_GATEWAY_EDGE", "CORE_DB_CLUSTER"],
-                    "AUTH_MODULE_v2": ["CORE_DB_CLUSTER"],
-                    "CORE_MESSAGE_BROKER": ["CORE_DB_CLUSTER", "API_GATEWAY_EDGE"],
-                    "API_GATEWAY_EDGE": [],
-                    "CORE_DB_CLUSTER": [],
-                    "DC_EU_EAST": []
-                }
+                # --- 🛠️ FIXED CASCADING BLAST RADIUS TRAVERSAL ---
+                topo_engine = PharosTopologyBuilder()
+                G = topo_engine.create_govtech_supply_chain()
                 
                 affected_nodes = set()
-                if target_node in network_nodes:
+                if target_node != "UNKNOWN":
+                    upstream_impact = topo_engine.get_upstream_impact(target_node)
+                    affected_nodes.update(upstream_impact)
                     affected_nodes.add(target_node)
-                    affected_nodes.update(network_nodes[target_node])
                 
-                all_known_nodes = set(network_nodes.keys())
-                for neighbors in network_nodes.values():
-                    all_known_nodes.update(neighbors)
+                all_known_nodes = set(G.nodes())
                     
                 for node in all_known_nodes:
                     if is_approved:
@@ -415,7 +425,7 @@ with tab1:
                             size = 22
                             label = f"🟢 {node}"
                             font_size = 15
-                        
+                    
                     net.add_node(
                         node, 
                         label=label, 
@@ -425,15 +435,14 @@ with tab1:
                         font={"size": font_size, "color": "#0f172a", "face": "Arial", "strokeWidth": 3, "strokeColor": "#ffffff"}
                     )
                 
-                for parent, children in network_nodes.items():
-                    for child in children:
-                        if not is_approved and parent in affected_nodes and child in affected_nodes:
-                            edge_color = "#f87171"
-                            width = 3
-                        else:
-                            edge_color = "#e2e8f0"
-                            width = 1.5
-                        net.add_edge(parent, child, color=edge_color, width=width)
+                for source, target in G.edges():
+                    if not is_approved and source in affected_nodes and target in affected_nodes:
+                        edge_color = "#f87171"
+                        width = 3
+                    else:
+                        edge_color = "#e2e8f0"
+                        width = 1.5
+                    net.add_edge(source, target, color=edge_color, width=width)
                 
                 graph_html_path = "pyvis_graph.html"
                 net.save_graph(graph_html_path)

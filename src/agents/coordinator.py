@@ -36,10 +36,13 @@ class PharosIntelligentEngine:
         execution_logs.append(f"[Coordinator] Phase 2: Structural Entity Resolution complete. Querying key: '{resolved_node}'.")
 
         # Step 2: Query the live NetworkX topological matrix via Risk Agent
-        blast_radius_count = run_risk_agent(resolved_node, execution_logs)
+        # The risk agent now returns the list of impacted assets directly
+        upstream_impacted_assets = run_risk_agent(resolved_node, execution_logs)
+        blast_radius_count = len(upstream_impacted_assets)
         
         # Step 3: Mitigation Infrastructure Mapping
         mitigation_plan = None
+        # We trigger mitigation if the node is critical or if the blast radius is > 0
         if blast_radius_count > 0 or (resolved_node != "UNKNOWN" and resolved_node in ["OPEN_SOURCE_LOGGING_LIB", "AUTH_MODULE_v2", "GOV_PORTAL_CORE"]):
             execution_logs.append(f"[Coordinator] Phase 3: Actionable breach verified. System producing cryptographic playbook.")
             mitigation_plan = f"""# PHAROS AUTOMATED CONTAINMENT PLAYBOOK V1.2
@@ -57,6 +60,8 @@ echo "⚡ Isolation complete. Threatened upstream tracking loops isolated succes
         
         return {
             "target_node": resolved_node if resolved_node != "UNKNOWN" else target_node,
+            "impacted_assets": upstream_impacted_assets,  # Payload now includes the node list for UI coloring
+            "blast_radius": blast_radius_count,
             "mitigation_plan": mitigation_plan,
             "execution_logs": execution_logs
         }
